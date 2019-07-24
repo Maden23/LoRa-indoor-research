@@ -16,7 +16,7 @@ def initSerial():
             pass
         num+=1
     if not ser:
-        return None, num
+        return None
     else:
         print(ser.name + " initialized")
         ser.flushInput()
