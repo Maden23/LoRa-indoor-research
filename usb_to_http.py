@@ -3,7 +3,7 @@ import requests
 import time
 
 # usb_device = 'COM'
-usb_device = '/dev/tty'
+usb_device = '/dev/ttyUSB'
 usb_rate = 9600
 usb_timeout = 10
 
