@@ -5,7 +5,7 @@
 
 // Experiment settings
 #define FLOOR 1
-#define WAIT_BEFORE_SF_CHANGE 15000 //milliseconds
+#define WAIT_BEFORE_SF_CHANGE 100000 //milliseconds
 
 // LoRa settings
 #define BAND    868E6  
@@ -19,6 +19,8 @@ int packet_id = 0;
 int rssi;
 float snr;
 unsigned long lastReceive;
+unsigned long button_timer;
+
 
 int parseLoRaPacket(int packetSize) {
   String packet;
@@ -56,7 +58,9 @@ void setup() {
   Heltec.display->display();
   Heltec.LoRa.receive();
   lastReceive = millis();
+  // pinMode(0, INPUT_PULLUP);
 }
+
 
 void loop() {
   int packetSize = Heltec.LoRa.parsePacket();
@@ -65,11 +69,16 @@ void loop() {
     parseLoRaPacket(packetSize); 
     displayInfo();
     sendToSerial();
-  }     
-  if (packet_id && millis() - lastReceive >= WAIT_BEFORE_SF_CHANGE)
+    button_timer = millis();
+  }
+
+  int btn = digitalRead(0);     
+
+  if ((packet_id && millis() - lastReceive >= WAIT_BEFORE_SF_CHANGE) || (btn == 0 && millis() - button_timer >= 300))
   {
     Heltec.LoRa.setSpreadingFactor(++sf);
     lastReceive = millis();
+    button_timer = millis();
     Heltec.display->clear();
     Heltec.display->drawString(0, 0, "Changed SF to " + String(sf));
     Heltec.display->display();

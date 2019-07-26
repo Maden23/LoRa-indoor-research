@@ -3,11 +3,13 @@
 
 #define BAND    868E6  
 #define MSG_COUNT 500
-#define WAIT_BEFORE_SF_CHANGE 20000
-#define WAIT_BETWEEN_MESSAGES 500
+#define WAIT_BEFORE_SF_CHANGE 110000
+#define WAIT_BETWEEN_MESSAGES 1000
 
 unsigned int counter = 1;
 int sf = 7;
+unsigned long button_timer;
+unsigned long send_timer;
 
 void display()
 {
@@ -27,12 +29,16 @@ void setup() {
   Serial.begin(9600);
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Heltec.display->setFont(ArialMT_Plain_10);
+  button_timer = millis();
+  send_timer = millis();
 }
 
 void loop() {
+  int btn = digitalRead(0);
   // Reached wanted message count on this spreading factor, moving to the next one
-  if (counter > MSG_COUNT)
+  if (counter > MSG_COUNT || (btn == 0 && millis() - button_timer >= 300))
   {
+    button_timer = millis();
     sf++;
     counter = 1;
     LoRa.setSpreadingFactor(sf);
@@ -49,17 +55,20 @@ void loop() {
     Heltec.display->clear();
     Heltec.display->drawString(0, 0, "Changing SF to " + String(sf));
     Heltec.display->display();
-    delay(WAIT_BEFORE_SF_CHANGE); 
+    if (btn == 0) delay(2500);
+    else delay(WAIT_BEFORE_SF_CHANGE); 
    }
 
 
   // Sending packet
-  display();
-  LoRa.beginPacket();
-  LoRa.print("hello " + String(counter));
-  LoRa.endPacket();
-  delay(WAIT_BETWEEN_MESSAGES);
-  counter++;
-
-  
+  if (millis() - send_timer >= WAIT_BETWEEN_MESSAGES)
+  {
+    display();
+    LoRa.beginPacket();
+    LoRa.print("hello " + String(counter));
+    LoRa.endPacket();
+    // delay(WAIT_BETWEEN_MESSAGES);
+    send_timer = millis();
+    counter++;
+  }
 }

@@ -46,8 +46,8 @@ def sendNotification(text):
         "target_type": target_type,
         "content": text
     }
-    r = requests.post("https://api.pushed.co/1/push", data=payload)
-    print("Pushed: " + r.text)
+    r = requests.get(url, data=payload)
+    print("Telegram: " + r.text)
 
 ser = None
 while not ser:
@@ -55,8 +55,8 @@ while not ser:
 
 last_message = time.time()
 while True:
-    if time.time() - last_message >= 60:
-        sendNotification("No data for more than a minute")
+    if time.time() - last_message >= 120:
+        sendNotification("No data for more than two minutes")
         last_message = time.time()
     try:
         if ser and ser.inWaiting() > 0:
