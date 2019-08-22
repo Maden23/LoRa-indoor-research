@@ -20,14 +20,16 @@ int rssi;
 float snr;
 unsigned long lastReceive;
 unsigned long button_timer;
+bool packetRecieved = false;
 
 
 int parseLoRaPacket(int packetSize) {
   String packet;
-  for (int i = 0; i < packetSize; i++) { packet += (char) Heltec.LoRa.read(); }
+  // for (int i = 0; i < packetSize; i++) { packet += (char) LoRa.read(); }
+  packet = LoRa.readString();
   packet_id = packet.substring(packet.lastIndexOf(' ')).toInt();
-  rssi = Heltec.LoRa.packetRssi();
-  snr = Heltec.LoRa.packetSnr();
+  rssi = LoRa.packetRssi();
+  snr = LoRa.packetSnr();
 }
 
 void sendToSerial() {
@@ -45,10 +47,15 @@ void displayInfo() {
   Heltec.display->display();
 }
 
+void onReceive(int packetSize)
+{
+  parseLoRaPacket(packetSize);
+  packetRecieved = true;
+}
+
 void setup() {
   Heltec.begin(true /*DisplayEnable Enable*/, true /*LoRa Enable*/, false /*Serial Disable*/, true /*PABOOST Enable*/, BAND /*long BAND*/);
-  Heltec.LoRa.setFrequency(BAND);
-  Heltec.LoRa.setSpreadingFactor(sf);
+  // LoRa.setFrequency(BAND);
   Serial.begin(9600);
   Heltec.display->init();
   Heltec.display->flipScreenVertically();  
@@ -56,19 +63,31 @@ void setup() {
   Heltec.display->clear();
   Heltec.display->drawString(0, 0, "Waiting for packets...");
   Heltec.display->display();
-  Heltec.LoRa.receive();
+
+  LoRa.setSpreadingFactor(sf);
+  LoRa.onReceive(onReceive);
+  LoRa.receive();
   lastReceive = millis();
-  // pinMode(0, INPUT_PULLUP);
 }
 
 
+
 void loop() {
-  int packetSize = Heltec.LoRa.parsePacket();
-  if (packetSize) { 
-    lastReceive = millis();
-    parseLoRaPacket(packetSize); 
+  // int packetSize = LoRa.parsePacket();
+  // if (packetSize) { 
+  //   lastReceive = millis();
+  //   parseLoRaPacket(packetSize); 
+  //   displayInfo();
+  //   sendToSerial();
+  //   button_timer = millis();
+  // }
+
+  if (packetRecieved)
+  {
     displayInfo();
     sendToSerial();
+    packetRecieved = false;
+    lastReceive = millis();
     button_timer = millis();
   }
 
@@ -76,7 +95,8 @@ void loop() {
 
   if ((packet_id && millis() - lastReceive >= WAIT_BEFORE_SF_CHANGE) || (btn == 0 && millis() - button_timer >= 300))
   {
-    Heltec.LoRa.setSpreadingFactor(++sf);
+    LoRa.setSpreadingFactor(++sf);
+    // LoRa.receive();  
     lastReceive = millis();
     button_timer = millis();
     Heltec.display->clear();
@@ -95,3 +115,4 @@ void loop() {
   }
 
 }
+  
